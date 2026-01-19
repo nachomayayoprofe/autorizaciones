@@ -32,8 +32,11 @@ function actualizarLista() {
   const cincoMinutosAntes = ahoraMinutos - 5;
 
   const hoy = ahora.toISOString().slice(0,10);
-  db.ref(`autorizaciones/${hoy}`).once('value').then(snapshot => {
-    snapshot.forEach(alumnoSnap => {
+ db.ref(`autorizaciones`).once('value').then(snapshot => {
+
+   snapshot.forEach(diaSnap => {
+  diaSnap.forEach(alumnoSnap => {
+
       const nombre = alumnoSnap.key;
     Object.values(alumnoSnap.val()).forEach(reg => {
   if (!reg.hora) return;   // 👈 CLAVE
@@ -59,6 +62,7 @@ setInterval(actualizarLista, 10000);
 </script>
 </body>
 </html>
+
 
 
 
