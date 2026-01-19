@@ -28,15 +28,17 @@ function actualizarLista() {
   const lista = document.getElementById('lista');
   lista.innerHTML = '';
   const ahora = new Date();
-  const cincoMinutosAntes = new Date(ahora.getTime() - 5*60000);
+  const ahoraMinutos = ahora.getHours()*60 + ahora.getMinutes();
+  const cincoMinutosAntes = ahoraMinutos - 5;
 
   const hoy = ahora.toISOString().slice(0,10);
   db.ref(`autorizaciones/${hoy}`).once('value').then(snapshot => {
     snapshot.forEach(alumnoSnap => {
       const nombre = alumnoSnap.key;
       alumnoSnap.val().forEach(reg => {
-        const hora = new Date(hoy + 'T' + reg.hora + ':00');
-        if(hora >= cincoMinutosAntes){
+        const partes = reg.hora.split(':');
+        const minutos = parseInt(partes[0])*60 + parseInt(partes[1]);
+        if(minutos >= cincoMinutosAntes){
           lista.innerHTML += `<li>${nombre} a las ${reg.hora}</li>`;
         }
       });
@@ -44,9 +46,11 @@ function actualizarLista() {
   });
 }
 
+
 // Actualiza la lista cada 10 segundos
 actualizarLista();
 setInterval(actualizarLista, 10000);
 </script>
 </body>
 </html>
+
