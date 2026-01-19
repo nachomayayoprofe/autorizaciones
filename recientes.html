@@ -38,7 +38,8 @@ function actualizarLista() {
       alumnoSnap.val().forEach(reg => {
         const partes = reg.hora.split(':');
         const minutos = parseInt(partes[0])*60 + parseInt(partes[1]);
-        if(minutos >= cincoMinutosAntes){
+       if (minutos >= cincoMinutosAntes && minutos <= ahoraMinutos) {
+
           lista.innerHTML += `<li>${nombre} a las ${reg.hora}</li>`;
         }
       });
@@ -53,4 +54,5 @@ setInterval(actualizarLista, 10000);
 </script>
 </body>
 </html>
+
 
