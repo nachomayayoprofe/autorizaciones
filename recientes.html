@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Autorizaciones recientes</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<h1>Alumnos autorizados últimos 5 minutos</h1>
+<ul id="lista"></ul>
+
+<script>
+// CONFIGURACIÓN DE FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
+  authDomain: "autorizaciones-cc9cd.firebaseapp.com",
+  projectId: "autorizaciones-cc9cd",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
+  storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
+  messagingSenderId: "126656366989",
+  appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+function actualizarLista() {
+  const lista = document.getElementById('lista');
+  lista.innerHTML = '';
+  const ahora = new Date();
+  const cincoMinutosAntes = new Date(ahora.getTime() - 5*60000);
+
+  const hoy = ahora.toISOString().slice(0,10);
+  db.ref(`autorizaciones/${hoy}`).once('value').then(snapshot => {
+    snapshot.forEach(alumnoSnap => {
+      const nombre = alumnoSnap.key;
+      alumnoSnap.val().forEach(reg => {
+        const hora = new Date(hoy + 'T' + reg.hora + ':00');
+        if(hora >= cincoMinutosAntes){
+          lista.innerHTML += `<li>${nombre} a las ${reg.hora}</li>`;
+        }
+      });
+    });
+  });
+}
+
+// Actualiza la lista cada 10 segundos
+actualizarLista();
+setInterval(actualizarLista, 10000);
+</script>
+</body>
+</html>
