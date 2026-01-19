@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Autorización Baño</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<h1>Autorización Baño</h1>
+
+<label>Curso: <select id="curso"></select></label><br>
+<label>Clase: <select id="clase"></select></label><br>
+<label>Alumno: <select id="alumno"></select></label><br>
+<p id="veces">Veces hoy: 0</p>
+<button id="autorizar">Autorizar</button>
+<p id="mensaje"></p>
+
+<script>
+// CONFIGURACIÓN DE FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
+  authDomain: "autorizaciones-cc9cd.firebaseapp.com",
+  projectId: "autorizaciones-cc9cd",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
+  storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
+  messagingSenderId: "126656366989",
+  appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// LISTA DE ALUMNOS (ejemplo, luego añadiremos todos)
+const alumnos = [
+  {curso:"1º ESO", grupo:"A", nombre:"Ana"},
+  {curso:"1º ESO", grupo:"A", nombre:"Luis"},
+  {curso:"2º ESO", grupo:"B", nombre:"Carlos"}
+];
+
+// Rellenar cursos
+const cursos = [...new Set(alumnos.map(a => a.curso))];
+const cursoSelect = document.getElementById('curso');
+cursos.forEach(c => cursoSelect.innerHTML += `<option>${c}</option>`);
+
+const claseSelect = document.getElementById('clase');
+const alumnoSelect = document.getElementById('alumno');
+let alumnoSeleccionado = null;
+
+// Al seleccionar curso
+cursoSelect.addEventListener('change', () => {
+  const curso = cursoSelect.value;
+  const clases = [...new Set(alumnos.filter(a => a.curso===curso).map(a => a.grupo))];
+  claseSelect.innerHTML = '<option>Selecciona</option>';
+  clases.forEach(c => claseSelect.innerHTML += `<option>${c}</option>`);
+  alumnoSelect.innerHTML = '<option>Selecciona</option>';
+  document.getElementById('veces').innerText = 'Veces hoy: 0';
+});
+
+// Al seleccionar clase
+claseSelect.addEventListener('change', () => {
+  const curso = cursoSelect.value;
+  const grupo = claseSelect.value;
+  const alumnosFiltrados = alumnos.filter(a => a.curso===curso && a.grupo===grupo);
+  alumnoSelect.innerHTML = '<option>Selecciona</option>';
+  alumnosFiltrados.forEach(a => alumnoSelect.innerHTML += `<option>${a.nombre}</option>`);
+  document.getElementById('veces').innerText = 'Veces hoy: 0';
+});
+
+// Al seleccionar alumno
+alumnoSelect.addEventListener('change', () => {
+  alumnoSeleccionado = alumnoSelect.value;
+  if(alumnoSeleccionado!=="Selecciona"){
+    const hoy = new Date().toISOString().slice(0,10);
+    db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`).once('value').then(snapshot => {
+      const veces = snapshot.exists() ? snapshot.val().length : 0;
+      document.getElementById('veces').innerText = 'Veces hoy: ' + veces;
+    });
+  }
+});
+
+// Botón autorizar
+document.getElementById('autorizar').addEventListener('click', () => {
+  if(!alumnoSeleccionado || alumnoSeleccionado==="Selecciona") return alert("Selecciona un alumno");
+  const ahora = new Date().toISOString();
+  const hoy = ahora.slice(0,10);
+  const ref = db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`);
+  ref.once('value').then(snapshot => {
+    const data = snapshot.exists() ? snapshot.val() : [];
+    data.push({hora: ahora.slice(11,16)});
+    ref.set(data);
+    document.getElementById('veces').innerText = 'Veces hoy: ' + data.length;
+    document.getElementById('mensaje').innerText = `Autorización registrada a las ${ahora.slice(11,16)}`;
+  });
+});
+</script>
+</body>
+</html>
