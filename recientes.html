@@ -35,13 +35,15 @@ function actualizarLista() {
   db.ref(`autorizaciones/${hoy}`).once('value').then(snapshot => {
     snapshot.forEach(alumnoSnap => {
       const nombre = alumnoSnap.key;
-      alumnoSnap.val().forEach(reg => {
-        const partes = reg.hora.split(':');
-        const minutos = parseInt(partes[0])*60 + parseInt(partes[1]);
-       if (minutos >= cincoMinutosAntes && minutos <= ahoraMinutos) {
+     Object.values(alumnoSnap.val()).forEach(reg => {
+  const partes = reg.hora.split(':');
+  const minutos = parseInt(partes[0]) * 60 + parseInt(partes[1]);
 
-          lista.innerHTML += `<li>${nombre} a las ${reg.hora}</li>`;
-        }
+  if (minutos >= cincoMinutosAntes && minutos <= ahoraMinutos) {
+    lista.innerHTML += `<li>${nombre} a las ${reg.hora}</li>`;
+  }
+});
+
       });
     });
   });
@@ -54,5 +56,6 @@ setInterval(actualizarLista, 10000);
 </script>
 </body>
 </html>
+
 
 
