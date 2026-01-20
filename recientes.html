@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Autorizaciones recientes</title>
-
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -15,7 +13,7 @@ body {
   background-color: #f7f7f7;
   display: flex;
   justify-content: center;
-  padding-top: 50px;
+  padding: 50px 10px;
 }
 
 .container {
@@ -23,7 +21,7 @@ body {
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  width: 90%;
+  width: 100%;
   max-width: 350px;
 }
 
@@ -38,30 +36,20 @@ ul {
 }
 
 ul li {
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #eee;
-}
-
-#mensaje {
-  text-align: center;
-  margin-top: 10px;
-  font-weight: bold;
-  color: #888;
 }
 </style>
 </head>
-
 <body>
+
 <div class="container">
-<h1>Alumnos autorizados (últimos 5 minutos)</h1>
-<ul id="lista"></ul>
-<p id="mensaje"></p>
+  <h1>Alumnos autorizados (últimos 5 min)</h1>
+  <ul id="lista"></ul>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-
-  // 🔹 CONFIGURACIÓN FIREBASE
   const firebaseConfig = {
     apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
     authDomain: "autorizaciones-cc9cd.firebaseapp.com",
@@ -71,61 +59,50 @@ document.addEventListener("DOMContentLoaded", () => {
     messagingSenderId: "126656366989",
     appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
   };
-
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
+  firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
   function actualizarLista() {
     const lista = document.getElementById("lista");
-    const mensaje = document.getElementById("mensaje");
-    lista.innerHTML = "";
-    mensaje.innerText = "";
+    lista.innerHTML = '';
 
     const ahora = new Date();
     const hace5Min = new Date(ahora.getTime() - 5*60000);
-
-    // Fecha local
-    const hoy = ahora.getFullYear() + "-" +
-                String(ahora.getMonth()+1).padStart(2,"0") + "-" +
-                String(ahora.getDate()).padStart(2,"0");
+    const hoy = ahora.toISOString().slice(0,10);
 
     db.ref("autorizaciones/" + hoy).once("value").then(snapshot => {
-      if (!snapshot.exists()) {
-        mensaje.innerText = "No hay autorizaciones recientes";
+      if(!snapshot.exists()){
+        lista.innerHTML = '<li>No hay autorizaciones recientes</li>';
         return;
       }
 
       let count = 0;
-
       snapshot.forEach(alumnoSnap => {
         const nombre = alumnoSnap.key;
         const registros = alumnoSnap.val();
 
         Object.values(registros).forEach(reg => {
-          if (!reg.hora) return;
-          const fechaHora = new Date(hoy + "T" + reg.hora + ":00");
-          if (fechaHora >= hace5Min && fechaHora <= ahora) {
+          if(!reg.hora) return;
+          const fechaHora = new Date(reg.hora);
+          if(fechaHora >= hace5Min && fechaHora <= ahora){
             const li = document.createElement("li");
-            li.textContent = `${nombre} → ${reg.hora}`;
+            li.textContent = `${nombre} → ${fechaHora.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
             lista.appendChild(li);
             count++;
           }
         });
       });
 
-      if (count === 0) {
-        mensaje.innerText = "No hay autorizaciones recientes";
+      if(count === 0){
+        lista.innerHTML = '<li>No hay autorizaciones recientes</li>';
       }
     });
   }
 
-  // 🔁 Actualiza cada 10 segundos
   actualizarLista();
   setInterval(actualizarLista, 10000);
-
 });
 </script>
+
 </body>
 </html>
