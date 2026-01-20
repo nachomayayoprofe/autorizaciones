@@ -9,69 +9,32 @@
 
 <style>
 body {
-  font-family: 'Verdana', sans-serif;
-  background-color: #f0f2f5;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
-  padding-top: 50px;
+  font-family: Arial, sans-serif;
+  background:#f7f7f7;
+  padding:30px;
 }
-
-.container {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  width: 350px;
-  max-width: 90%;
+h1 {
+  text-align:center;
 }
-
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #333;
-}
-
 ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  list-style:none;
+  padding:0;
+  max-width:400px;
+  margin:0 auto;
 }
-
 li {
-  background-color: #f7f7f7;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  font-size: 16px;
-  display: flex;
-  justify-content: space-between;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-
-li span.hora {
-  font-weight: bold;
-  color: #0066cc;
-}
-
-@media(max-width: 400px){
-  li {
-    font-size: 14px;
-    padding: 8px 10px;
-  }
+  background:white;
+  padding:10px;
+  margin:6px 0;
+  border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
 }
 </style>
 </head>
 
 <body>
-<div class="container">
-<h2>Alumnos autorizados (últimos 5 minutos)</h2>
-<ul id="lista">
-  <li>Cargando...</li>
-</ul>
-</div>
+<h1>Alumnos autorizados (últimos 5 minutos)</h1>
+<ul id="lista"></ul>
 
 <script>
 // 🔹 FIREBASE
@@ -87,7 +50,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-function actualizarLista() {
+function actualizar() {
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
 
@@ -95,6 +58,7 @@ function actualizarLista() {
   const hace5 = new Date(ahora.getTime() - 5*60000);
 
   db.ref("autorizaciones").once("value").then(snapshot => {
+
     let hay = false;
 
     snapshot.forEach(diaSnap => {
@@ -112,7 +76,7 @@ function actualizarLista() {
           if(fechaHora >= hace5 && fechaHora <= ahora) {
             hay = true;
             const li = document.createElement("li");
-            li.innerHTML = `${alumno} <span class="hora">${reg.hora}</span>`;
+            li.textContent = `${alumno} → ${reg.hora}`;
             lista.appendChild(li);
           }
         });
@@ -120,12 +84,13 @@ function actualizarLista() {
     });
 
     if(!hay) lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
+
   });
 }
 
-// 🔁 Actualiza cada 10 segundos
-actualizarLista();
-setInterval(actualizarLista, 10000);
+// 🔁 refresco cada 10 segundos
+actualizar();
+setInterval(actualizar, 10000);
 </script>
 </body>
 </html>
