@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Autorización Baño</title>
-
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -15,7 +13,7 @@ body {
   background-color: #f7f7f7;
   display: flex;
   justify-content: center;
-  padding-top: 50px;
+  padding: 50px 10px;
 }
 
 .container {
@@ -23,7 +21,7 @@ body {
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  width: 90%;
+  width: 100%;
   max-width: 350px;
 }
 
@@ -34,50 +32,54 @@ h1 {
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin: 10px 0 5px;
 }
 
-select {
+select, button {
   width: 100%;
   padding: 8px;
-  margin-bottom: 15px;
+  font-size: 16px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
   font-family: Verdana, Geneva, sans-serif;
 }
 
 button {
-  width: 100%;
-  padding: 10px;
   background-color: #4CAF50;
   color: white;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
 }
 
 button:hover {
   background-color: #45a049;
 }
 
-#veces, #mensaje {
+.contador, #mensaje {
   text-align: center;
-  margin-top: 10px;
+  margin: 10px 0;
   font-weight: bold;
 }
 </style>
 </head>
-
 <body>
+
 <div class="container">
-<h1>Autorización Baño</h1>
+  <h1>Autorización Baño</h1>
 
-<label>Curso: <select id="curso"></select></label>
-<label>Clase: <select id="clase"></select></label>
-<label>Alumno: <select id="alumno"></select></label>
+  <label>Curso:</label>
+  <select id="curso"></select>
 
-<p id="veces">Veces hoy: 0</p>
-<button id="autorizar">Autorizar</button>
-<p id="mensaje"></p>
+  <label>Clase:</label>
+  <select id="clase"></select>
+
+  <label>Alumno:</label>
+  <select id="alumno"></select>
+
+  <p class="contador" id="veces">Veces hoy: 0</p>
+  <button id="autorizar">Autorizar</button>
+  <p id="mensaje"></p>
 </div>
 
 <script>
@@ -93,176 +95,25 @@ document.addEventListener("DOMContentLoaded", () => {
     messagingSenderId: "126656366989",
     appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
   };
-
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
+  firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // LISTA DE ALUMNOS
-const alumnos = [
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Aguilera Banegas, Jordi Adiel"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Amador Romero, Ramón"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Ciprian Vivas, Nicolás"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Fernández Martín, Alejandro"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Gallardo Quintana, Sheila"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"García Álvarez, Rocío"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Orumwense Igbinadolor, Daniela Aisosa"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Reyes García, Inés"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Rodríguez Sánchez, Natalia"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Saila Kourizy, Mariam"},
-  {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Tejero Escalona, Rocío"},
-  {curso:"2º Bachillerato", grupo:"Ciencias", nombre:"González Castillo, Jorge Javier"},
-  {curso:"2º Bachillerato", grupo:"Ciencias", nombre:"Remicio Sembrera, Marilyn Yulieth"},
-  {curso:"2º Bachillerato", grupo:"Ciencias", nombre:"Tlidi Ibali, Alaa"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Bazán Sebastiani, Emiliano Nicolás"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Cardozo Loza, Gabriela"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Castro Figueroa, Claudia Fernanda"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Contreras Mogollón, Mariangel Astrid"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Grant Tasé, Liz Vivianne"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Ogbuagu Kaduru, Emmanuel Chigozie"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Ruiz Rondón, Joan Alexander"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Soliz Cardozo, Isabel Anaís"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Veneros Blanco, Daniel Fabricio"},
-  {curso:"2º Bachillerato", grupo:"Sociales", nombre:"Vidal Orbezo, Carmen Naomi"},
-  {curso:"2º ESO", grupo:"A", nombre:"Bencheikh Saboua, Sara Doaa"},
-  {curso:"2º ESO", grupo:"A", nombre:"Cifuentes Quintero, Celeste"},
-  {curso:"2º ESO", grupo:"A", nombre:"Coronel Pérez, Carla Gisel"},
-  {curso:"2º ESO", grupo:"A", nombre:"Durán Huetos, Míriam"},
-  {curso:"2º ESO", grupo:"A", nombre:"Giménez Benítez, Ever Maximino"},
-  {curso:"2º ESO", grupo:"A", nombre:"Heredia Heredia, Diego"},
-  {curso:"2º ESO", grupo:"A", nombre:"Hernández Campos, Trinidad"},
-  {curso:"2º ESO", grupo:"A", nombre:"Hevia Delgado, José Fabio"},
-  {curso:"2º ESO", grupo:"A", nombre:"Huaman Achire, Brianna Sydney"},
-  {curso:"2º ESO", grupo:"A", nombre:"Jiménez García, Nazaret"},
-  {curso:"2º ESO", grupo:"A", nombre:"Kassimi , Malak"},
-  {curso:"2º ESO", grupo:"A", nombre:"Manzano Motos, Abraham"},
-  {curso:"2º ESO", grupo:"A", nombre:"Merstani Aachoui, Adam"},
-  {curso:"2º ESO", grupo:"A", nombre:"Moreno Menéndez, Esmeralda"},
-  {curso:"2º ESO", grupo:"A", nombre:"Motos Iglesias, Brayan"},
-  {curso:"2º ESO", grupo:"A", nombre:"Rabadán Serrano, Mario"},
-  {curso:"2º ESO", grupo:"A", nombre:"Rodríguez Parra, Danna Sofia"},
-  {curso:"2º ESO", grupo:"A", nombre:"Vargas Fernández, Nazaret"},
-  {curso:"2º ESO", grupo:"A", nombre:"Vargas Fernández, Raúl"},
-  {curso:"2º ESO", grupo:"B", nombre:"Cabero Sánchez, Alma"},
-  {curso:"2º ESO", grupo:"B", nombre:"Campomanes Sánchez, Rocío"},
-  {curso:"2º ESO", grupo:"B", nombre:"del Saz López, Alba María"},
-  {curso:"2º ESO", grupo:"B", nombre:"García Amador, Yasmín"},
-  {curso:"2º ESO", grupo:"B", nombre:"García García, Ainhoa"},
-  {curso:"2º ESO", grupo:"B", nombre:"Grajeda Ascuy, Iker"},
-  {curso:"2º ESO", grupo:"B", nombre:"Heredia García, José"},
-  {curso:"2º ESO", grupo:"B", nombre:"Heredia Heredia, Eleazar"},
-  {curso:"2º ESO", grupo:"B", nombre:"Hernández Bustamante, Sebastián"},
-  {curso:"2º ESO", grupo:"B", nombre:"Hernández Gabarre, Tania"},
-  {curso:"2º ESO", grupo:"B", nombre:"Jiménez Fernández, Aitana"},
-  {curso:"2º ESO", grupo:"B", nombre:"Jiménez Marroquín, Mirna Julissa"},
-  {curso:"2º ESO", grupo:"B", nombre:"Lojan Quintanilla, Dehiber Eduardo"},
-  {curso:"2º ESO", grupo:"B", nombre:"Mariño Álvarez, María Lucía"},
-  {curso:"2º ESO", grupo:"B", nombre:"Martínez González, Danna Alejandra"},
-  {curso:"2º ESO", grupo:"B", nombre:"Matiauda Paredes, Benjamín"},
-  {curso:"2º ESO", grupo:"B", nombre:"Motos Salazar, Dara"},
-  {curso:"2º ESO", grupo:"B", nombre:"Tandi Villalba, Víctor Manuel"},
-  {curso:"2º ESO", grupo:"B", nombre:"Taoun Taoun, Omnya"},
-  {curso:"2º ESO", grupo:"C", nombre:"Ballega Leñero, Diego"},
-  {curso:"2º ESO", grupo:"C", nombre:"Chirikov , Artur"},
-  {curso:"2º ESO", grupo:"C", nombre:"Gabarri Gabarri, Diego"},
-  {curso:"2º ESO", grupo:"C", nombre:"Kassimi , Manal"},
-  {curso:"2º ESO", grupo:"C", nombre:"Laínez Beltrán, Jeimmy Jazmín"},
-  {curso:"2º ESO", grupo:"C", nombre:"Marín Barrueco, Jade"},
-  {curso:"2º ESO", grupo:"C", nombre:"Martínez García, Rosa"},
-  {curso:"2º ESO", grupo:"C", nombre:"Rivera Bielen, Verónica Julia"},
-  {curso:"2º ESO", grupo:"C", nombre:"Roselló Quispe, Natzuri Mia"},
-  {curso:"2º ESO", grupo:"C", nombre:"Salazar Amaya, Alfredo"},
-  {curso:"2º ESO", grupo:"D", nombre:"Ahram Amekran, Mariam"},
-  {curso:"2º ESO", grupo:"D", nombre:"Contreras Huetos, Adriana"},
-  {curso:"2º ESO", grupo:"D", nombre:"de Mier Clavaín, Andrea"},
-  {curso:"2º ESO", grupo:"D", nombre:"Flores Jiménez, Antonio"},
-  {curso:"2º ESO", grupo:"D", nombre:"Heredia Saavedra, Agustín"},
-  {curso:"2º ESO", grupo:"D", nombre:"Jorge Ossorio, Rafael"},
-  {curso:"2º ESO", grupo:"D", nombre:"Marín Barrueco, Yadira del Carmen"},
-  {curso:"2º ESO", grupo:"D", nombre:"Martínez Nívar, Nerea"},
-  {curso:"2º ESO", grupo:"D", nombre:"Muñoz Heredia, Emmanuel"},
-  {curso:"2º ESO", grupo:"D", nombre:"Roselló Quispe, Rihanna Zoe"},
-  {curso:"2º ESO", grupo:"D", nombre:"Stoyanov Petrov, Martín"},
-  {curso:"2º ESO", grupo:"D", nombre:"Tarcay Arroyo, Bianca Marcela"},
-  {curso:"2º DIVER", grupo:"2º DIVER", nombre:"Narváez Esteban, Naomi Jaice"},
-  {curso:"2º DIVER", grupo:"2º DIVER", nombre:"Osorio Gonzales, Darío Martin"},
-  {curso:"3º ESO", grupo:"A", nombre:"Aillon Forero, Sahilyn Gabriela"},
-  {curso:"3º ESO", grupo:"A", nombre:"Barahona González, Brithani Mahely"},
-  {curso:"3º ESO", grupo:"A", nombre:"Castro Pérez, Borja Aarón"},
-  {curso:"3º ESO", grupo:"A", nombre:"Charley , Haruna Mohammed"},
-  {curso:"3º ESO", grupo:"A", nombre:"Gutiérrez Dubón, Óscar Javier"},
-  {curso:"3º ESO", grupo:"A", nombre:"Hamimoun Moine, Ishak"},
-  {curso:"3º ESO", grupo:"A", nombre:"Lartiga Hau, Thiago Aldhair"},
-  {curso:"3º ESO", grupo:"B", nombre:"Agudelo Bermúdez, Dylan Andrey"},
-  {curso:"3º ESO", grupo:"B", nombre:"Aparcana Santos, Johan Tihago"},
-  {curso:"3º ESO", grupo:"B", nombre:"Cano Loayza, Yeremi Adrián"},
-  {curso:"3º ESO", grupo:"B", nombre:"Cardozo Vela, Diego"},
-  {curso:"3º ESO", grupo:"B", nombre:"Ciprian Duarte, Eddylis"},
-  {curso:"3º ESO", grupo:"B", nombre:"Coulibaly Wte Mohamed, Mohamed"},
-  {curso:"3º ESO", grupo:"B", nombre:"Giraldo Díaz, Gustavo"},
-  {curso:"3º ESO", grupo:"B", nombre:"Heredia Heredia, Mercedes"},
-  {curso:"3º ESO", grupo:"B", nombre:"Kapusta , Noelia Laura"},
-  {curso:"3º ESO", grupo:"B", nombre:"Newton Diouf, Destin"},
-  {curso:"3º ESO", grupo:"B", nombre:"Restrepo Bermúdez, Juan José"},
-  {curso:"3º ESO", grupo:"B", nombre:"Solaberrieta Cortés, William Asier"},
-  {curso:"3º ESO", grupo:"B", nombre:"Vare Yana, Adriano Nilmar"},
-  {curso:"3º ESO", grupo:"C", nombre:"Dias Soares Cassama, Ivair"},
-  {curso:"3º ESO", grupo:"C", nombre:"Gabarri de los Reyes, Diego"},
-  {curso:"3º ESO", grupo:"C", nombre:"Gómez Sacon, Sofía"},
-  {curso:"3º ESO", grupo:"C", nombre:"González Pérez, Zara María"},
-  {curso:"3º ESO", grupo:"C", nombre:"Kalinova Petkova, Irena"},
-  {curso:"3º ESO", grupo:"C", nombre:"Lucio de Pereda, Jaime"},
-  {curso:"3º ESO", grupo:"C", nombre:"Machado Pérez, Daniela"},
-  {curso:"3º ESO", grupo:"C", nombre:"Mendoza Aquino, Yamileth Akemi"},
-  {curso:"3º ESO", grupo:"C", nombre:"Pérez Candia, Derlis Fabián"},
-  {curso:"3º ESO", grupo:"C", nombre:"Sánchez Ríos, Andrés Felipe"},
-  {curso:"3º ESO", grupo:"D", nombre:"Ayad Sbaiti, Sofía"},
-  {curso:"3º ESO", grupo:"D", nombre:"Castillo Bayano, Barry Manuel"},
-  {curso:"3º ESO", grupo:"D", nombre:"Castillo Cancho, Emma del"},
-  {curso:"3º ESO", grupo:"D", nombre:"Díaz Bogota, Nayara Carolina"},
-  {curso:"3º ESO", grupo:"D", nombre:"Galán Cid, Gonzalo"},
-  {curso:"3º ESO", grupo:"D", nombre:"Ogbuagu Kaduru, Victory Chimdiebube"},
-  {curso:"3º ESO", grupo:"D", nombre:"Ortega Acevedo, Jonathan Guillermo"},
-  {curso:"3º ESO", grupo:"D", nombre:"Palomino Bernales, Mathias Alessandro"},
-  {curso:"3º ESO", grupo:"D", nombre:"Rugel Franco, Bryan Aarón"},
-  {curso:"4º ESO", grupo:"A", nombre:"Artola Briceño, Valery Yuvanela"},
-  {curso:"4º ESO", grupo:"A", nombre:"Cabrera Flores, Ilsi Jamoleth"},
-  {curso:"4º ESO", grupo:"A", nombre:"Charazuri Martín, Irune"},
-  {curso:"4º ESO", grupo:"A", nombre:"López Zuñiga, Maria Jose"},
-  {curso:"4º ESO", grupo:"A", nombre:"Ortiz Casado, Elena"},
-  {curso:"4º ESO", grupo:"A", nombre:"Singh Kour, Jasleen"},
-  {curso:"4º ESO", grupo:"B", nombre:"Aldana Jaimes, Samuel David"},
-  {curso:"4º ESO", grupo:"B", nombre:"Burgos Granados, Diana"},
-  {curso:"4º ESO", grupo:"B", nombre:"de Jesús Nolasco, Angela Mariany"},
-  {curso:"4º ESO", grupo:"B", nombre:"Ferreras El Rhachoua, Míryam"},
-  {curso:"4º ESO", grupo:"B", nombre:"Gálvez Meyzan, Masatoshi Juan José"},
-  {curso:"4º ESO", grupo:"B", nombre:"Garea Hernández, Jervys Lázaro"},
-  {curso:"4º ESO", grupo:"B", nombre:"González Ibarra, Jhoneiker Jose"},
-  {curso:"4º ESO", grupo:"B", nombre:"Lugo Castillo, Anghel Junior"},
-  {curso:"4º ESO", grupo:"B", nombre:"Muenala Cushcagua, Néstor Amaury"},
-  {curso:"4º ESO", grupo:"B", nombre:"Pérez Jiménez, Pilar"},
-  {curso:"4º ESO", grupo:"B", nombre:"Pérez Ricaldez, Leonel Alejandro"},
-  {curso:"4º ESO", grupo:"B", nombre:"Raif Ait el Bayad, Zainab"},
-  {curso:"4º ESO", grupo:"B", nombre:"Rodríguez Luque, Álvaro Santiago"},
-  {curso:"4º ESO", grupo:"C", nombre:"Ahram Amekran, Khadija"},
-  {curso:"4º ESO", grupo:"C", nombre:"Calderón Becerra, Ariadne Desiree"},
-  {curso:"4º ESO", grupo:"C", nombre:"Cifuentes Quintero, Gerónimo"},
-  {curso:"4º ESO", grupo:"C", nombre:"Cueva Torbisco, Nerea Esther"},
-  {curso:"4º ESO", grupo:"C", nombre:"Esquivel Bedia, Alex Fernando"},
-  {curso:"4º ESO", grupo:"C", nombre:"Hssaine Bohboh, Yousra"},
-  {curso:"4º ESO", grupo:"C", nombre:"Khallouq Liahamdi, Tarik"},
-  {curso:"4º ESO", grupo:"C", nombre:"Lin , Xiner"},
-  {curso:"4º ESO", grupo:"C", nombre:"Liu , Wenju"}
-];
+  // 🔹 LISTA DE ALUMNOS (reemplaza por tu listado completo)
+  const alumnos = [
+    {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Aguilera Banegas, Jordi Adiel"},
+    {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Amador Romero, Ramón"},
+    {curso:"2º ESO", grupo:"A", nombre:"Bencheikh Saboua, Sara Doaa"},
+    {curso:"2º ESO", grupo:"B", nombre:"Cabero Sánchez, Alma"}
+    // ... añade todos tus alumnos aquí
+  ];
 
-
+  // 🔹 SELECTS
   const cursoSelect = document.getElementById('curso');
   const claseSelect = document.getElementById('clase');
   const alumnoSelect = document.getElementById('alumno');
   let alumnoSeleccionado = null;
 
-  // 🔹 Rellenar cursos
+  // Rellenar cursos
   const cursos = [...new Set(alumnos.map(a => a.curso))];
   cursoSelect.innerHTML = '<option>Selecciona</option>';
   cursos.forEach(c => cursoSelect.innerHTML += `<option>${c}</option>`);
@@ -290,35 +141,32 @@ const alumnos = [
   // Al seleccionar alumno
   alumnoSelect.addEventListener('change', () => {
     alumnoSeleccionado = alumnoSelect.value;
-    if(alumnoSeleccionado !== "Selecciona"){
+    if(alumnoSeleccionado!=="Selecciona"){
       const hoy = new Date().toISOString().slice(0,10);
       db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`).once('value').then(snapshot => {
         const veces = snapshot.exists() ? snapshot.val().length : 0;
         document.getElementById('veces').innerText = 'Veces hoy: ' + veces;
       });
-    } else {
-      document.getElementById('veces').innerText = 'Veces hoy: 0';
     }
   });
 
   // Botón autorizar
   document.getElementById('autorizar').addEventListener('click', () => {
     if(!alumnoSeleccionado || alumnoSeleccionado==="Selecciona") return alert("Selecciona un alumno");
-    const ahora = new Date().toISOString();
-    const hoy = ahora.slice(0,10);
+    const ahora = new Date();
+    const hoy = ahora.toISOString().slice(0,10);
     const ref = db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`);
     ref.once('value').then(snapshot => {
       const data = snapshot.exists() ? snapshot.val() : [];
-      data.push({hora: ahora.slice(11,16).padStart(5,'0')});
+      data.push({hora: ahora.toISOString()});
       ref.set(data);
       document.getElementById('veces').innerText = 'Veces hoy: ' + data.length;
-      document.getElementById('mensaje').innerText = `Última autorización a las ${ahora.slice(11,16)}`;
+      document.getElementById('mensaje').innerText = `Autorización registrada a las ${ahora.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
     });
   });
 
 });
 </script>
+
 </body>
 </html>
-
-
