@@ -312,7 +312,7 @@ const alumnos = [
       data.push({hora: ahora.slice(11,16).padStart(5,'0')});
       ref.set(data);
       document.getElementById('veces').innerText = 'Veces hoy: ' + data.length;
-      document.getElementById('mensaje').innerText = `Autorización registrada a las ${ahora.slice(11,16)}`;
+      document.getElementById('mensaje').innerText = `Última autorización a las ${ahora.slice(11,16)}`;
     });
   });
 
@@ -320,4 +320,5 @@ const alumnos = [
 </script>
 </body>
 </html>
+
 
