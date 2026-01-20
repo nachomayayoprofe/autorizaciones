@@ -3,95 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <title>Autorización Baño</title>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body {
+  font-family: Verdana, Geneva, sans-serif;
+  background-color: #f7f7f7;
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
+
+.container {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  width: 320px;
+}
+
+label { display:block; margin-top:10px; }
+select, button { width:100%; padding:6px; margin-top:5px; }
+button { margin-top:15px; }
+#mensaje { margin-top:10px; font-weight:bold; text-align:center; }
+</style>
 </head>
+
 <body>
+<div class="container">
 <h1>Autorización Baño</h1>
 
-<label>Curso: <select id="curso"></select></label><br>
-<label>Clase: <select id="clase"></select></label><br>
-<label>Alumno: <select id="alumno"></select></label><br>
+<label>Curso</label>
+<select id="curso"></select>
+
+<label>Clase</label>
+<select id="clase"></select>
+
+<label>Alumno</label>
+<select id="alumno"></select>
+
 <p id="veces">Veces hoy: 0</p>
 <button id="autorizar">Autorizar</button>
 <p id="mensaje"></p>
+</div>
 
 <script>
-// CONFIGURACIÓN DE FIREBASE
+// 🔹 FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
   authDomain: "autorizaciones-cc9cd.firebaseapp.com",
-  projectId: "autorizaciones-cc9cd",
   databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "autorizaciones-cc9cd",
   storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
   messagingSenderId: "126656366989",
   appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// LISTA DE ALUMNOS (ejemplo, luego añadiremos todos)
+// 🔹 FECHA LOCAL
+function fechaLocal() {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+         String(d.getMonth()+1).padStart(2,"0") + "-" +
+         String(d.getDate()).padStart(2,"0");
+}
+
+// 🔹 ALUMNOS (EJEMPLO)
 const alumnos = [
   {curso:"1º ESO", grupo:"A", nombre:"Ana"},
   {curso:"1º ESO", grupo:"A", nombre:"Luis"},
   {curso:"2º ESO", grupo:"B", nombre:"Carlos"}
 ];
 
-// Rellenar cursos
-const cursos = [...new Set(alumnos.map(a => a.curso))];
-const cursoSelect = document.getElementById('curso');
-cursos.forEach(c => cursoSelect.innerHTML += `<option>${c}</option>`);
+const cursoSel = document.getElementById("curso");
+const claseSel = document.getElementById("clase");
+const alumnoSel = document.getElementById("alumno");
+let alumnoActual = null;
 
-const claseSelect = document.getElementById('clase');
-const alumnoSelect = document.getElementById('alumno');
-let alumnoSeleccionado = null;
-
-// Al seleccionar curso
-cursoSelect.addEventListener('change', () => {
-  const curso = cursoSelect.value;
-  const clases = [...new Set(alumnos.filter(a => a.curso===curso).map(a => a.grupo))];
-  claseSelect.innerHTML = '<option>Selecciona</option>';
-  clases.forEach(c => claseSelect.innerHTML += `<option>${c}</option>`);
-  alumnoSelect.innerHTML = '<option>Selecciona</option>';
-  document.getElementById('veces').innerText = 'Veces hoy: 0';
+// Cursos
+[...new Set(alumnos.map(a=>a.curso))].forEach(c=>{
+  cursoSel.innerHTML += `<option>${c}</option>`;
 });
 
-// Al seleccionar clase
-claseSelect.addEventListener('change', () => {
-  const curso = cursoSelect.value;
-  const grupo = claseSelect.value;
-  const alumnosFiltrados = alumnos.filter(a => a.curso===curso && a.grupo===grupo);
-  alumnoSelect.innerHTML = '<option>Selecciona</option>';
-  alumnosFiltrados.forEach(a => alumnoSelect.innerHTML += `<option>${a.nombre}</option>`);
-  document.getElementById('veces').innerText = 'Veces hoy: 0';
-});
+// Curso → clases
+cursoSel.onchange = () => {
+  claseSel.innerHTML = "";
+  alumnoSel.innerHTML = "";
+  document.getElementById("veces").innerText="Veces hoy: 0";
 
-// Al seleccionar alumno
-alumnoSelect.addEventListener('change', () => {
-  alumnoSeleccionado = alumnoSelect.value;
-  if(alumnoSeleccionado!=="Selecciona"){
-    const hoy = new Date().toISOString().slice(0,10);
-    db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`).once('value').then(snapshot => {
-      const veces = snapshot.exists() ? snapshot.val().length : 0;
-      document.getElementById('veces').innerText = 'Veces hoy: ' + veces;
-    });
-  }
-});
+  [...new Set(alumnos.filter(a=>a.curso===cursoSel.value).map(a=>a.grupo))]
+  .forEach(g=> claseSel.innerHTML+=`<option>${g}</option>`);
+};
 
-// Botón autorizar
-document.getElementById('autorizar').addEventListener('click', () => {
-  if(!alumnoSeleccionado || alumnoSeleccionado==="Selecciona") return alert("Selecciona un alumno");
-  const ahora = new Date().toISOString();
-  const hoy = ahora.slice(0,10);
-  const ref = db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`);
-  ref.once('value').then(snapshot => {
-    const data = snapshot.exists() ? snapshot.val() : [];
-    data.push({hora: ahora.slice(11,16)});
-    ref.set(data);
-    document.getElementById('veces').innerText = 'Veces hoy: ' + data.length;
-    document.getElementById('mensaje').innerText = `Autorización registrada a las ${ahora.slice(11,16)}`;
+// Clase → alumnos
+claseSel.onchange = () => {
+  alumnoSel.innerHTML = "";
+  alumnos.filter(a=>a.curso===cursoSel.value && a.grupo===claseSel.value)
+  .forEach(a=> alumnoSel.innerHTML+=`<option>${a.nombre}</option>`);
+};
+
+// Alumno seleccionado
+alumnoSel.onchange = () => {
+  alumnoActual = alumnoSel.value;
+  const hoy = fechaLocal();
+  db.ref(`autorizaciones/${hoy}/${alumnoActual}`).once("value")
+  .then(s=>{
+    const n = s.exists()? Object.keys(s.val()).length : 0;
+    document.getElementById("veces").innerText = "Veces hoy: "+n;
   });
-});
+};
+
+// Autorizar
+document.getElementById("autorizar").onclick = () => {
+  if(!alumnoActual) return alert("Selecciona alumno");
+
+  const hoy = fechaLocal();
+  const hora = new Date().toTimeString().slice(0,5);
+  const ref = db.ref(`autorizaciones/${hoy}/${alumnoActual}`);
+
+  ref.once("value").then(s=>{
+    const data = s.exists()? s.val() : {};
+    const id = Object.keys(data).length;
+    data[id] = {hora};
+    ref.set(data);
+
+    document.getElementById("veces").innerText =
+      "Veces hoy: "+(id+1);
+    document.getElementById("mensaje").innerText =
+      "Autorizado a las "+hora;
+  });
+};
 </script>
 </body>
 </html>
