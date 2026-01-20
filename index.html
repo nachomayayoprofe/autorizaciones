@@ -287,36 +287,46 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('veces').innerText = 'Veces hoy: 0';
   });
 
-  // Al seleccionar alumno
-  alumnoSelect.addEventListener('change', () => {
-    alumnoSeleccionado = alumnoSelect.value;
-    if(alumnoSeleccionado!=="Selecciona"){
-      const hoy = new Date().toISOString().slice(0,10);
-      db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`).once('value').then(snapshot => {
-        const veces = snapshot.exists() ? snapshot.val().length : 0;
-        document.getElementById('veces').innerText = 'Veces hoy: ' + veces;
-      });
-    }
-  });
+// Al seleccionar alumno
+alumnoSelect.addEventListener('change', () => {
+  alumnoSeleccionado = alumnoSelect.value;
+  if(alumnoSeleccionado !== "Selecciona"){
+    const hoy = new Date().toISOString().slice(0,10);
+    db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`).once('value').then(snapshot => {
+      const veces = snapshot.exists() ? snapshot.val().length : 0;
+      document.getElementById('veces').innerText = 'Veces hoy: ' + veces;
 
-  // Botón autorizar
-  document.getElementById('autorizar').addEventListener('click', () => {
-    if(!alumnoSeleccionado || alumnoSeleccionado==="Selecciona") return alert("Selecciona un alumno");
-    const ahora = new Date();
-    const hoy = ahora.toISOString().slice(0,10);
-    const ref = db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`);
-    ref.once('value').then(snapshot => {
-      const data = snapshot.exists() ? snapshot.val() : [];
-      data.push({hora: ahora.toISOString()});
-      ref.set(data);
-      document.getElementById('veces').innerText = 'Veces hoy: ' + data.length;
-      document.getElementById('mensaje').innerText = `Autorización registrada a las ${ahora.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      // 🔹 NO tocar el mensaje aquí
+      // document.getElementById('mensaje').innerText = '';
     });
+  }
+});
+
+// Botón autorizar
+document.getElementById('autorizar').addEventListener('click', () => {
+  if(!alumnoSeleccionado || alumnoSeleccionado === "Selecciona") return alert("Selecciona un alumno");
+
+  const ahora = new Date();
+  const hoy = ahora.toISOString().slice(0,10);
+  const ref = db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`);
+
+  ref.once('value').then(snapshot => {
+    const data = snapshot.exists() ? snapshot.val() : [];
+    data.push({hora: ahora.toISOString()}); // hora completa
+    ref.set(data);
+
+    document.getElementById('veces').innerText = 'Veces hoy: ' + data.length;
+
+    // 🔹 Mostrar mensaje SOLO al pulsar el botón
+    document.getElementById('mensaje').innerText = `Autorización registrada a las ${ahora.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
   });
+});
+
 
 });
 </script>
 
 </body>
 </html>
+
 
