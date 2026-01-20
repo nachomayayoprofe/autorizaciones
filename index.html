@@ -2,141 +2,97 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Autorización Baño</title>
+<title>Autorizaciones recientes</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
 body {
-  font-family: Verdana, Geneva, sans-serif;
-  background-color: #f7f7f7;
-  display: flex;
-  justify-content: center;
-  padding-top: 50px;
+  font-family: Arial, sans-serif;
+  background:#f7f7f7;
+  padding:30px;
 }
-
-.container {
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  width: 320px;
+h1 {
+  text-align:center;
 }
-
-label { display:block; margin-top:10px; }
-select, button { width:100%; padding:6px; margin-top:5px; }
-button { margin-top:15px; }
-#mensaje { margin-top:10px; font-weight:bold; text-align:center; }
+ul {
+  list-style:none;
+  padding:0;
+  max-width:400px;
+  margin:0 auto;
+}
+li {
+  background:white;
+  padding:10px;
+  margin:6px 0;
+  border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
 </style>
 </head>
 
 <body>
-<div class="container">
-<h1>Autorización Baño</h1>
-
-<label>Curso</label>
-<select id="curso"></select>
-
-<label>Clase</label>
-<select id="clase"></select>
-
-<label>Alumno</label>
-<select id="alumno"></select>
-
-<p id="veces">Veces hoy: 0</p>
-<button id="autorizar">Autorizar</button>
-<p id="mensaje"></p>
-</div>
+<h1>Alumnos autorizados (últimos 5 minutos)</h1>
+<ul id="lista"></ul>
 
 <script>
 // 🔹 FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
   authDomain: "autorizaciones-cc9cd.firebaseapp.com",
-  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "autorizaciones-cc9cd",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
   storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
   messagingSenderId: "126656366989",
   appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 🔹 FECHA LOCAL
-function fechaLocal() {
-  const d = new Date();
-  return d.getFullYear() + "-" +
-         String(d.getMonth()+1).padStart(2,"0") + "-" +
-         String(d.getDate()).padStart(2,"0");
+function actualizar() {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  const ahora = new Date();
+  const hace5 = new Date(ahora.getTime() - 5 * 60000);
+
+  db.ref("autorizaciones").once("value").then(snapshot => {
+
+    let hay = false;
+
+    snapshot.forEach(diaSnap => {
+      const fecha = diaSnap.key;
+
+      diaSnap.forEach(alumnoSnap => {
+        const alumno = alumnoSnap.key;
+        const registros = alumnoSnap.val();
+
+        Object.values(registros).forEach(reg => {
+          if (!reg.hora) return;
+
+          const fechaHora = new Date(fecha + "T" + reg.hora + ":00");
+
+          if (fechaHora >= hace5 && fechaHora <= ahora) {
+            hay = true;
+            const li = document.createElement("li");
+            li.textContent = `${alumno} → ${reg.hora}`;
+            lista.appendChild(li);
+          }
+        });
+      });
+    });
+
+    if (!hay) {
+      lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
+    }
+
+  });
 }
 
-// 🔹 ALUMNOS (EJEMPLO)
-const alumnos = [
-  {curso:"1º ESO", grupo:"A", nombre:"Ana"},
-  {curso:"1º ESO", grupo:"A", nombre:"Luis"},
-  {curso:"2º ESO", grupo:"B", nombre:"Carlos"}
-];
-
-const cursoSel = document.getElementById("curso");
-const claseSel = document.getElementById("clase");
-const alumnoSel = document.getElementById("alumno");
-let alumnoActual = null;
-
-// Cursos
-[...new Set(alumnos.map(a=>a.curso))].forEach(c=>{
-  cursoSel.innerHTML += `<option>${c}</option>`;
-});
-
-// Curso → clases
-cursoSel.onchange = () => {
-  claseSel.innerHTML = "";
-  alumnoSel.innerHTML = "";
-  document.getElementById("veces").innerText="Veces hoy: 0";
-
-  [...new Set(alumnos.filter(a=>a.curso===cursoSel.value).map(a=>a.grupo))]
-  .forEach(g=> claseSel.innerHTML+=`<option>${g}</option>`);
-};
-
-// Clase → alumnos
-claseSel.onchange = () => {
-  alumnoSel.innerHTML = "";
-  alumnos.filter(a=>a.curso===cursoSel.value && a.grupo===claseSel.value)
-  .forEach(a=> alumnoSel.innerHTML+=`<option>${a.nombre}</option>`);
-};
-
-// Alumno seleccionado
-alumnoSel.onchange = () => {
-  alumnoActual = alumnoSel.value;
-  const hoy = fechaLocal();
-  db.ref(`autorizaciones/${hoy}/${alumnoActual}`).once("value")
-  .then(s=>{
-    const n = s.exists()? Object.keys(s.val()).length : 0;
-    document.getElementById("veces").innerText = "Veces hoy: "+n;
-  });
-};
-
-// Autorizar
-document.getElementById("autorizar").onclick = () => {
-  if(!alumnoActual) return alert("Selecciona alumno");
-
-  const hoy = fechaLocal();
-  const hora = new Date().toTimeString().slice(0,5);
-  const ref = db.ref(`autorizaciones/${hoy}/${alumnoActual}`);
-
-  ref.once("value").then(s=>{
-    const data = s.exists()? s.val() : {};
-    const id = Object.keys(data).length;
-    data[id] = {hora};
-    ref.set(data);
-
-    document.getElementById("veces").innerText =
-      "Veces hoy: "+(id+1);
-    document.getElementById("mensaje").innerText =
-      "Autorizado a las "+hora;
-  });
-};
+// 🔁 refresco
+actualizar();
+setInterval(actualizar, 10000);
 </script>
 </body>
 </html>
