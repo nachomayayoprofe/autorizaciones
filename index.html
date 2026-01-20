@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Autorizaciones recientes</title>
+<title>Autorización Baño</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -11,30 +11,50 @@
 body {
   font-family: Arial, sans-serif;
   background:#f7f7f7;
-  padding:30px;
+  display:flex;
+  justify-content:center;
+  padding-top:50px;
 }
-h1 {
-  text-align:center;
-}
-ul {
-  list-style:none;
-  padding:0;
-  max-width:400px;
-  margin:0 auto;
-}
-li {
+.container {
   background:white;
-  padding:10px;
-  margin:6px 0;
-  border-radius:8px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  padding:25px;
+  border-radius:10px;
+  width:320px;
+}
+select, button {
+  width:100%;
+  padding:6px;
+  margin-top:8px;
+}
+.contador {
+  text-align:center;
+  margin-top:10px;
+  font-weight:bold;
 }
 </style>
 </head>
 
 <body>
-<h1>Alumnos autorizados (últimos 5 minutos)</h1>
-<ul id="lista"></ul>
+<div class="container">
+<h2>Autorización Baño</h2>
+
+<select id="curso">
+  <option value="">Selecciona curso</option>
+</select>
+
+<select id="clase" disabled>
+  <option value="">Selecciona clase</option>
+</select>
+
+<select id="alumno" disabled>
+  <option value="">Selecciona alumno</option>
+</select>
+
+<div class="contador" id="veces">Veces hoy: 0</div>
+
+<button id="autorizar" disabled>Autorizar</button>
+<p id="mensaje"></p>
+</div>
 
 <script>
 // 🔹 FIREBASE
@@ -50,49 +70,97 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-function actualizar() {
-  const lista = document.getElementById("lista");
-  lista.innerHTML = "";
+// 🔹 ALUMNOS
+const alumnos = [
+  {curso:"1º ESO", grupo:"A", nombre:"Ana"},
+  {curso:"1º ESO", grupo:"A", nombre:"Luis"},
+  {curso:"2º ESO", grupo:"B", nombre:"Carlos"}
+];
+
+const cursoSel = document.getElementById("curso");
+const claseSel = document.getElementById("clase");
+const alumnoSel = document.getElementById("alumno");
+const btn = document.getElementById("autorizar");
+const vecesDiv = document.getElementById("veces");
+const msg = document.getElementById("mensaje");
+
+let alumnoActual = null;
+
+// 🔹 CARGA CURSOS
+[...new Set(alumnos.map(a=>a.curso))].forEach(c=>{
+  cursoSel.innerHTML += `<option value="${c}">${c}</option>`;
+});
+
+cursoSel.onchange = () => {
+  claseSel.innerHTML = '<option value="">Selecciona clase</option>';
+  alumnoSel.innerHTML = '<option value="">Selecciona alumno</option>';
+  claseSel.disabled = true;
+  alumnoSel.disabled = true;
+  btn.disabled = true;
+  vecesDiv.innerText = "Veces hoy: 0";
+  msg.innerText = "";
+
+  if(!cursoSel.value) return;
+
+  [...new Set(alumnos.filter(a=>a.curso===cursoSel.value).map(a=>a.grupo))]
+  .forEach(g=>{
+    claseSel.innerHTML += `<option value="${g}">${g}</option>`;
+  });
+  claseSel.disabled = false;
+};
+
+claseSel.onchange = () => {
+  alumnoSel.innerHTML = '<option value="">Selecciona alumno</option>';
+  alumnoSel.disabled = true;
+  btn.disabled = true;
+  vecesDiv.innerText = "Veces hoy: 0";
+  msg.innerText = "";
+
+  if(!claseSel.value) return;
+
+  alumnos
+    .filter(a=>a.curso===cursoSel.value && a.grupo===claseSel.value)
+    .forEach(a=>{
+      alumnoSel.innerHTML += `<option value="${a.nombre}">${a.nombre}</option>`;
+    });
+  alumnoSel.disabled = false;
+};
+
+alumnoSel.onchange = () => {
+  alumnoActual = alumnoSel.value;
+  btn.disabled = !alumnoActual;
+  msg.innerText = "";
+
+  if(!alumnoActual) return;
+
+  const hoy = new Date().toISOString().slice(0,10);
+
+  db.ref(`autorizaciones/${hoy}/${alumnoActual}`).once("value")
+    .then(snap=>{
+      const veces = snap.exists() ? snap.val().length : 0;
+      vecesDiv.innerText = "Veces hoy: " + veces;
+    });
+};
+
+// 🔹 AUTORIZAR
+btn.onclick = () => {
+  if(!alumnoActual) return;
 
   const ahora = new Date();
-  const hace5 = new Date(ahora.getTime() - 5 * 60000);
+  const hoy = ahora.toISOString().slice(0,10);
+  const hora = ahora.toTimeString().slice(0,5);
 
-  db.ref("autorizaciones").once("value").then(snapshot => {
+  const ref = db.ref(`autorizaciones/${hoy}/${alumnoActual}`);
 
-    let hay = false;
+  ref.once("value").then(snap=>{
+    const datos = snap.exists() ? snap.val() : [];
+    datos.push({ hora: hora });
+    ref.set(datos);
 
-    snapshot.forEach(diaSnap => {
-      const fecha = diaSnap.key;
-
-      diaSnap.forEach(alumnoSnap => {
-        const alumno = alumnoSnap.key;
-        const registros = alumnoSnap.val();
-
-        Object.values(registros).forEach(reg => {
-          if (!reg.hora) return;
-
-          const fechaHora = new Date(fecha + "T" + reg.hora + ":00");
-
-          if (fechaHora >= hace5 && fechaHora <= ahora) {
-            hay = true;
-            const li = document.createElement("li");
-            li.textContent = `${alumno} → ${reg.hora}`;
-            lista.appendChild(li);
-          }
-        });
-      });
-    });
-
-    if (!hay) {
-      lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
-    }
-
+    vecesDiv.innerText = "Veces hoy: " + datos.length;
+    msg.innerText = `Autorizado a las ${hora}`;
   });
-}
-
-// 🔁 refresco
-actualizar();
-setInterval(actualizar, 10000);
+};
 </script>
 </body>
 </html>
