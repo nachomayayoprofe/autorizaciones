@@ -55,7 +55,7 @@ function actualizar() {
   lista.innerHTML = "";
 
   const ahora = new Date();
-  const hace5 = new Date(ahora.getTime() - 5 * 60000);
+  const hace5 = new Date(ahora.getTime() - 5*60000);
 
   db.ref("autorizaciones").once("value").then(snapshot => {
 
@@ -69,11 +69,11 @@ function actualizar() {
         const registros = alumnoSnap.val();
 
         Object.values(registros).forEach(reg => {
-          if (!reg.hora) return;
+          if(!reg.hora) return;
 
           const fechaHora = new Date(fecha + "T" + reg.hora + ":00");
 
-          if (fechaHora >= hace5 && fechaHora <= ahora) {
+          if(fechaHora >= hace5 && fechaHora <= ahora) {
             hay = true;
             const li = document.createElement("li");
             li.textContent = `${alumno} → ${reg.hora}`;
@@ -83,14 +83,12 @@ function actualizar() {
       });
     });
 
-    if (!hay) {
-      lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
-    }
+    if(!hay) lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
 
   });
 }
 
-// 🔁 refresco
+// 🔁 refresco cada 10 segundos
 actualizar();
 setInterval(actualizar, 10000);
 </script>
