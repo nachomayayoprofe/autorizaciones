@@ -8,13 +8,32 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body { font-family: Verdana; background:#f7f7f7; padding:30px; }
-li { margin:6px 0; }
+body {
+  font-family: Arial, sans-serif;
+  background:#f7f7f7;
+  padding:30px;
+}
+h1 {
+  text-align:center;
+}
+ul {
+  list-style:none;
+  padding:0;
+  max-width:400px;
+  margin:0 auto;
+}
+li {
+  background:white;
+  padding:10px;
+  margin:6px 0;
+  border-radius:8px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
 </style>
 </head>
 
 <body>
-<h1>Últimos 5 minutos</h1>
+<h1>Alumnos autorizados (últimos 5 minutos)</h1>
 <ul id="lista"></ul>
 
 <script>
@@ -22,51 +41,58 @@ li { margin:6px 0; }
 const firebaseConfig = {
   apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
   authDomain: "autorizaciones-cc9cd.firebaseapp.com",
-  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "autorizaciones-cc9cd",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
   storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
   messagingSenderId: "126656366989",
   appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
-function fechaLocal() {
-  const d = new Date();
-  return d.getFullYear() + "-" +
-         String(d.getMonth()+1).padStart(2,"0") + "-" +
-         String(d.getDate()).padStart(2,"0");
-}
 
 function actualizar() {
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
 
   const ahora = new Date();
-  const hace5 = new Date(ahora.getTime() - 5*60000);
-  const hoy = fechaLocal();
+  const hace5 = new Date(ahora.getTime() - 5 * 60000);
 
-  db.ref(`autorizaciones/${hoy}`).once("value").then(snap=>{
-    if(!snap.exists()){
-      lista.innerHTML="<li>No hay datos</li>";
-      return;
-    }
+  db.ref("autorizaciones").once("value").then(snapshot => {
 
-    snap.forEach(alumno=>{
-      const nombre = alumno.key;
-      Object.values(alumno.val()).forEach(reg=>{
-        const fh = new Date(hoy+"T"+reg.hora+":00");
-        if(fh>=hace5 && fh<=ahora){
-          lista.innerHTML += `<li>${nombre} → ${reg.hora}</li>`;
-        }
+    let hay = false;
+
+    snapshot.forEach(diaSnap => {
+      const fecha = diaSnap.key;
+
+      diaSnap.forEach(alumnoSnap => {
+        const alumno = alumnoSnap.key;
+        const registros = alumnoSnap.val();
+
+        Object.values(registros).forEach(reg => {
+          if (!reg.hora) return;
+
+          const fechaHora = new Date(fecha + "T" + reg.hora + ":00");
+
+          if (fechaHora >= hace5 && fechaHora <= ahora) {
+            hay = true;
+            const li = document.createElement("li");
+            li.textContent = `${alumno} → ${reg.hora}`;
+            lista.appendChild(li);
+          }
+        });
       });
     });
+
+    if (!hay) {
+      lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
+    }
+
   });
 }
 
+// 🔁 refresco
 actualizar();
-setInterval(actualizar,10000);
+setInterval(actualizar, 10000);
 </script>
 </body>
 </html>
