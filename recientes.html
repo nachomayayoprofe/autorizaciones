@@ -9,27 +9,44 @@
 
 <style>
 body {
-  font-family: Arial, sans-serif;
-  background:#f7f7f7;
-  padding:30px;
+  font-family: 'Verdana', sans-serif;
+  background-color: #f0f2f5;
+  margin: 0;
+  padding: 30px;
 }
+
 h1 {
-  text-align:center;
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
 }
+
 ul {
-  list-style:none;
-  padding:0;
-  max-width:400px;
-  margin:0 auto;
+  list-style: none;
+  padding: 0;
+  max-width: 500px;
+  margin: 0 auto;
 }
+
 li {
-  background:white;
-  padding:10px;
-  margin:6px 0;
-  border-radius:8px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  background-color: #ffffff;
+  padding: 12px 15px;
+  margin: 8px 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
+@media(max-width: 400px){
+  li {
+    font-size: 14px;
+    padding: 10px;
+  }
 }
 </style>
+
 </head>
 
 <body>
@@ -94,3 +111,4 @@ setInterval(actualizar, 10000);
 </script>
 </body>
 </html>
+
