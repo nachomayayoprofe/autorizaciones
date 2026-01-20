@@ -3,78 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <title>Autorizaciones recientes</title>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body {
-  font-family: 'Verdana', sans-serif;
-  background-color: #f0f2f5;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
-  padding-top: 50px;
-}
-
-.container {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  width: 350px;
-  max-width: 90%;
-}
-
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-li {
-  background-color: #f7f7f7;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  font-size: 16px;
-  display: flex;
-  justify-content: space-between;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-
-li span.hora {
-  font-weight: bold;
-  color: #0066cc;
-}
-
-@media(max-width: 400px){
-  li {
-    font-size: 14px;
-    padding: 8px 10px;
+  body {
+    font-family: Verdana, Geneva, sans-serif;
+    background-color: #f7f7f7;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    margin: 0;
   }
-}
+  .container {
+    background-color: #fff;
+    padding: 25px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+  }
+  h1 { text-align: center; margin-bottom: 20px; font-size: 1.5em; }
+  ul { list-style-type: none; padding-left: 0; }
+  ul li { padding: 8px 5px; border-bottom: 1px solid #eee; font-size: 1em; }
+  @media (max-width: 480px) {
+    h1 { font-size: 1.3em; }
+    .container { padding: 20px 15px; }
+  }
 </style>
 </head>
-
 <body>
 <div class="container">
-<h2>Alumnos autorizados (últimos 5 minutos)</h2>
-<ul id="lista">
-  <li>Cargando...</li>
-</ul>
+  <h1>Alumnos autorizados (últimos 5 min)</h1>
+  <ul id="lista"></ul>
 </div>
 
 <script>
-// 🔹 FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
   authDomain: "autorizaciones-cc9cd.firebaseapp.com",
@@ -92,40 +57,9 @@ function actualizarLista() {
   lista.innerHTML = "";
 
   const ahora = new Date();
-  const hace5 = new Date(ahora.getTime() - 5*60000);
+  const hace5Min = new Date(ahora.getTime() - 5 * 60000);
+  const hoy = ahora.getFullYear() + "-" +
+              String(ahora.getMonth()+1).padStart(2,"0") + "-" +
+              String(ahora.getDate()).padStart(2,"0");
 
-  db.ref("autorizaciones").once("value").then(snapshot => {
-    let hay = false;
-
-    snapshot.forEach(diaSnap => {
-      const fecha = diaSnap.key;
-
-      diaSnap.forEach(alumnoSnap => {
-        const alumno = alumnoSnap.key;
-        const registros = alumnoSnap.val();
-
-        Object.values(registros).forEach(reg => {
-          if(!reg.hora) return;
-
-          const fechaHora = new Date(fecha + "T" + reg.hora + ":00");
-
-          if(fechaHora >= hace5 && fechaHora <= ahora) {
-            hay = true;
-            const li = document.createElement("li");
-            li.innerHTML = `${alumno} <span class="hora">${reg.hora}</span>`;
-            lista.appendChild(li);
-          }
-        });
-      });
-    });
-
-    if(!hay) lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
-  });
-}
-
-// 🔁 Actualiza cada 10 segundos
-actualizarLista();
-setInterval(actualizarLista, 10000);
-</script>
-</body>
-</html>
+  db.ref("autorizaciones/" + hoy).once("value").then(snapshot =>
