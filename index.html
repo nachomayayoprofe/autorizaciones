@@ -4,101 +4,120 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Autorización Baño</title>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body {
-  font-family: Verdana, Geneva, sans-serif;
-  background-color: #f7f7f7;
-  display: flex;
-  justify-content: center;
-  padding: 50px 10px;
-}
+  body {
+    font-family: Verdana, Geneva, sans-serif;
+    background-color: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    padding: 30px;
+  }
 
-.container {
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 350px;
-}
+  .container {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
 
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
-}
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
 
-label {
-  display: block;
-  margin: 10px 0 5px;
-}
+  label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+  }
 
-select, button {
-  width: 100%;
-  padding: 8px;
-  font-size: 16px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-family: Verdana, Geneva, sans-serif;
-}
+  select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    font-size: 16px;
+  }
 
-button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
+  button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
 
-button:hover {
-  background-color: #45a049;
-}
+  button:hover {
+    background-color: #45a049;
+  }
 
-.contador, #mensaje {
-  text-align: center;
-  margin: 10px 0;
-  font-weight: bold;
-}
+  .contador {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  #mensaje {
+    margin-top: 12px;
+    text-align: center;
+    font-weight: bold;
+    color: #2e7d32;
+  }
 </style>
 </head>
-<body>
 
+<body>
 <div class="container">
   <h1>Autorización Baño</h1>
 
-  <label>Curso:</label>
-  <select id="curso"></select>
+  <label>Curso</label>
+  <select id="curso">
+    <option>Selecciona</option>
+  </select>
 
-  <label>Clase:</label>
-  <select id="clase"></select>
+  <label>Grupo</label>
+  <select id="clase">
+    <option>Selecciona</option>
+  </select>
 
-  <label>Alumno:</label>
-  <select id="alumno"></select>
+  <label>Alumno</label>
+  <select id="alumno">
+    <option>Selecciona</option>
+  </select>
 
   <p class="contador" id="veces">Veces hoy: 0</p>
+
   <button id="autorizar">Autorizar</button>
+
   <p id="mensaje"></p>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+/* 🔹 FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
+  authDomain: "autorizaciones-cc9cd.firebaseapp.com",
+  projectId: "autorizaciones-cc9cd",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
+  storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
+  messagingSenderId: "126656366989",
+  appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
+};
 
-  // 🔹 CONFIGURACIÓN FIREBASE
-  const firebaseConfig = {
-    apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
-    authDomain: "autorizaciones-cc9cd.firebaseapp.com",
-    projectId: "autorizaciones-cc9cd",
-    databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
-    storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
-    messagingSenderId: "126656366989",
-    appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  // 🔹 LISTA DE ALUMNOS (reemplaza por tu listado completo)
+/* 🔹 LISTA DE ALUMNOS (USA AQUÍ TU LISTADO COMPLETO) */
  const alumnos = [
   {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Aguilera Banegas, Jordi Adiel"},
   {curso:"1º DIVER", grupo:"1º DIVER", nombre:"Amador Romero, Ramón"},
@@ -256,77 +275,89 @@ document.addEventListener("DOMContentLoaded", () => {
 ];
 
 
-  // 🔹 SELECTS
-  const cursoSelect = document.getElementById('curso');
-  const claseSelect = document.getElementById('clase');
-  const alumnoSelect = document.getElementById('alumno');
-  let alumnoSeleccionado = null;
+/* 🔹 ELEMENTOS */
+const cursoSelect = document.getElementById("curso");
+const claseSelect = document.getElementById("clase");
+const alumnoSelect = document.getElementById("alumno");
+const vecesTxt = document.getElementById("veces");
+const mensajeTxt = document.getElementById("mensaje");
 
-  // Rellenar cursos
-  const cursos = [...new Set(alumnos.map(a => a.curso))];
-  cursoSelect.innerHTML = '<option>Selecciona</option>';
-  cursos.forEach(c => cursoSelect.innerHTML += `<option>${c}</option>`);
+let alumnoSeleccionado = null;
 
-  // Al seleccionar curso
-  cursoSelect.addEventListener('change', () => {
-    const curso = cursoSelect.value;
-    const clases = [...new Set(alumnos.filter(a => a.curso===curso).map(a => a.grupo))];
-    claseSelect.innerHTML = '<option>Selecciona</option>';
-    clases.forEach(c => claseSelect.innerHTML += `<option>${c}</option>`);
-    alumnoSelect.innerHTML = '<option>Selecciona</option>';
-    document.getElementById('veces').innerText = 'Veces hoy: 0';
-  });
+/* 🔹 RELLENAR CURSOS */
+[...new Set(alumnos.map(a => a.curso))].forEach(c =>
+  cursoSelect.innerHTML += `<option>${c}</option>`
+);
 
-  // Al seleccionar clase
-  claseSelect.addEventListener('change', () => {
-    const curso = cursoSelect.value;
-    const grupo = claseSelect.value;
-    const alumnosFiltrados = alumnos.filter(a => a.curso===curso && a.grupo===grupo);
-    alumnoSelect.innerHTML = '<option>Selecciona</option>';
-    alumnosFiltrados.forEach(a => alumnoSelect.innerHTML += `<option>${a.nombre}</option>`);
-    document.getElementById('veces').innerText = 'Veces hoy: 0';
-  });
+/* 🔹 AL CAMBIAR CURSO */
+cursoSelect.addEventListener("change", () => {
+  claseSelect.innerHTML = "<option>Selecciona</option>";
+  alumnoSelect.innerHTML = "<option>Selecciona</option>";
+  vecesTxt.innerText = "Veces hoy: 0";
+  mensajeTxt.innerText = "";
 
-// Al seleccionar alumno
-alumnoSelect.addEventListener('change', () => {
-  alumnoSeleccionado = alumnoSelect.value;
-  if(alumnoSeleccionado !== "Selecciona"){
-    const hoy = new Date().toISOString().slice(0,10);
-    db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`).once('value').then(snapshot => {
-      const veces = snapshot.exists() ? snapshot.val().length : 0;
-      document.getElementById('veces').innerText = 'Veces hoy: ' + veces;
+  const clases = [...new Set(
+    alumnos.filter(a => a.curso === cursoSelect.value).map(a => a.grupo)
+  )];
 
-      // 🔹 NO tocar el mensaje aquí
-      // document.getElementById('mensaje').innerText = '';
-    });
-  }
+  clases.forEach(c => claseSelect.innerHTML += `<option>${c}</option>`);
 });
 
-// Botón autorizar
-document.getElementById('autorizar').addEventListener('click', () => {
-  if(!alumnoSeleccionado || alumnoSeleccionado === "Selecciona") return alert("Selecciona un alumno");
+/* 🔹 AL CAMBIAR CLASE */
+claseSelect.addEventListener("change", () => {
+  alumnoSelect.innerHTML = "<option>Selecciona</option>";
+  vecesTxt.innerText = "Veces hoy: 0";
+  mensajeTxt.innerText = "";
+
+  const filtrados = alumnos.filter(a =>
+    a.curso === cursoSelect.value && a.grupo === claseSelect.value
+  );
+
+  filtrados.forEach(a =>
+    alumnoSelect.innerHTML += `<option>${a.nombre}</option>`
+  );
+});
+
+/* 🔹 AL CAMBIAR ALUMNO */
+alumnoSelect.addEventListener("change", () => {
+  alumnoSeleccionado = alumnoSelect.value;
+  mensajeTxt.innerText = "";
+
+  if (alumnoSeleccionado === "Selecciona") return;
+
+  const hoy = new Date().toISOString().slice(0,10);
+  db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`)
+    .once("value")
+    .then(snapshot => {
+      const veces = snapshot.exists() ? snapshot.val().length : 0;
+      vecesTxt.innerText = "Veces hoy: " + veces;
+    });
+});
+
+/* 🔹 BOTÓN AUTORIZAR */
+document.getElementById("autorizar").addEventListener("click", () => {
+  if (!alumnoSeleccionado || alumnoSeleccionado === "Selecciona") {
+    alert("Selecciona un alumno");
+    return;
+  }
 
   const ahora = new Date();
   const hoy = ahora.toISOString().slice(0,10);
   const ref = db.ref(`autorizaciones/${hoy}/${alumnoSeleccionado}`);
 
-  ref.once('value').then(snapshot => {
+  ref.once("value").then(snapshot => {
     const data = snapshot.exists() ? snapshot.val() : [];
-    data.push({hora: ahora.toISOString()}); // hora completa
+    data.push({ hora: ahora.toISOString() });
     ref.set(data);
 
-    document.getElementById('veces').innerText = 'Veces hoy: ' + data.length;
-
-    // 🔹 Mostrar mensaje SOLO al pulsar el botón
-    document.getElementById('mensaje').innerText = `Autorización registrada a las ${ahora.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+    vecesTxt.innerText = "Veces hoy: " + data.length;
+    mensajeTxt.innerText =
+      `Autorización registrada a las ${ahora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })}`;
   });
 });
-
-
-});
 </script>
-
 </body>
 </html>
-
-
