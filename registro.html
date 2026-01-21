@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autorizaciones</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body {
+  font-family: Verdana, Geneva, sans-serif;
+  background: #f2f2f2;
+  display: flex;
+  justify-content: center;
+  padding: 30px;
+}
+
+.container {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.15);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.fecha {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+input[type="date"] {
+  padding: 6px;
+  font-size: 15px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.hora {
+  font-weight: bold;
+  color: #2e7d32;
+}
+.curso {
+  color: #555;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1 id="titulo"></h1>
+
+  <div class="fecha">
+    <input type="date" id="fecha">
+  </div>
+
+  <ul id="lista"></ul>
+</div>
+
+<script>
+// 🔹 FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
+  authDomain: "autorizaciones-cc9cd.firebaseapp.com",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "autorizaciones-cc9cd",
+  storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
+  messagingSenderId: "126656366989",
+  appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const lista = document.getElementById("lista");
+const fechaInput = document.getElementById("fecha");
+const titulo = document.getElementById("titulo");
+
+const alumnos = {}; // 🔑 cache alumnos
+
+// 🔹 FECHA HOY
+const hoy = new Date().toISOString().slice(0,10);
+fechaInput.value = hoy;
+
+// 🔹 TITULO
+function actualizarTitulo(fecha) {
+  titulo.innerText = "Autorizaciones – " +
+    new Date(fecha).toLocaleDateString("es-ES");
+}
+
+// 🔹 CARGAR ALUMNOS
+function cargarAlumnos() {
+  return db.ref("alumnos").once("value").then(snapshot => {
+    snapshot.forEach(snap => {
+      alumnos[snap.key] = snap.val(); // {curso, grupo}
+    });
+  });
+}
+
+// 🔹 CARGAR AUTORIZACIONES
+function cargarAutorizaciones(fecha) {
+  lista.innerHTML = "";
+  actualizarTitulo(fecha);
+
+  db.ref("autorizaciones/" + fecha).once("value").then(snapshot => {
+
+    if (!snapshot.exists()) {
+      lista.innerHTML = "<li>No hay autorizaciones</li>";
+      return;
+    }
+
+    let registros = [];
+
+    snapshot.forEach(alumnoSnap => {
+      const nombre = alumnoSnap.key;
+
+      alumnoSnap.forEach(reg => {
+        registros.push({
+          nombre,
+          hora: reg.val().hora
+        });
+      });
+    });
+
+    registros.sort((a, b) => new Date(b.hora) - new Date(a.hora));
+
+    registros.forEach(r => {
+      const hora = new Date(r.hora)
+        .toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+
+      const datos = alumnos[r.nombre] || {};
+      const cursoGrupo = datos.curso ? `${datos.curso} ${datos.grupo}` : "";
+
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span class="hora">${hora}</span> –
+        ${r.nombre}
+        <span class="curso">(${cursoGrupo})</span>
+      `;
+      lista.appendChild(li);
+    });
+  });
+}
+
+// 🔹 EVENTO FECHA
+fechaInput.addEventListener("change", () => {
+  cargarAutorizaciones(fechaInput.value);
+});
+
+// 🔹 ARRANQUE
+cargarAlumnos().then(() => {
+  cargarAutorizaciones(hoy);
+});
+</script>
+</body>
+</html>
