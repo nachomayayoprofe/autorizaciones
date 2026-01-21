@@ -55,10 +55,6 @@ li {
   font-weight: bold;
   color: #2e7d32;
 }
-.curso {
-  color: #555;
-  font-size: 14px;
-}
 </style>
 </head>
 
@@ -92,8 +88,6 @@ const lista = document.getElementById("lista");
 const fechaInput = document.getElementById("fecha");
 const titulo = document.getElementById("titulo");
 
-const alumnos = {}; // 🔑 cache alumnos
-
 // 🔹 FECHA HOY
 const hoy = new Date().toISOString().slice(0,10);
 fechaInput.value = hoy;
@@ -102,15 +96,6 @@ fechaInput.value = hoy;
 function actualizarTitulo(fecha) {
   titulo.innerText = "Autorizaciones – " +
     new Date(fecha).toLocaleDateString("es-ES");
-}
-
-// 🔹 CARGAR ALUMNOS
-function cargarAlumnos() {
-  return db.ref("alumnos").once("value").then(snapshot => {
-    snapshot.forEach(snap => {
-      alumnos[snap.key] = snap.val(); // {curso, grupo}
-    });
-  });
 }
 
 // 🔹 CARGAR AUTORIZACIONES
@@ -138,20 +123,16 @@ function cargarAutorizaciones(fecha) {
       });
     });
 
+    // Ordenar por hora (más reciente primero)
     registros.sort((a, b) => new Date(b.hora) - new Date(a.hora));
 
     registros.forEach(r => {
       const hora = new Date(r.hora)
         .toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
 
-      const datos = alumnos[r.nombre] || {};
-      const cursoGrupo = datos.curso ? `${datos.curso} ${datos.grupo}` : "";
-
       const li = document.createElement("li");
       li.innerHTML = `
-        <span class="hora">${hora}</span> –
-        ${r.nombre}
-        <span class="curso">(${cursoGrupo})</span>
+        <span class="hora">${hora}</span> – ${r.nombre}
       `;
       lista.appendChild(li);
     });
@@ -164,9 +145,7 @@ fechaInput.addEventListener("change", () => {
 });
 
 // 🔹 ARRANQUE
-cargarAlumnos().then(() => {
-  cargarAutorizaciones(hoy);
-});
+cargarAutorizaciones(hoy);
 </script>
 </body>
 </html>
