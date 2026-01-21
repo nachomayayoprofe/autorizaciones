@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autorizaciones del día</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+  body {
+    font-family: Verdana, Geneva, sans-serif;
+    background-color: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    padding: 30px;
+  }
+
+  .container {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 15px;
+  }
+
+  .hora {
+    font-weight: bold;
+    color: #2e7d32;
+  }
+
+  .alumno {
+    margin-left: 6px;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>Autorizaciones de hoy</h1>
+  <ul id="lista"></ul>
+</div>
+
+<script>
+/* 🔹 FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
+  authDomain: "autorizaciones-cc9cd.firebaseapp.com",
+  projectId: "autorizaciones-cc9cd",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
+  storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
+  messagingSenderId: "126656366989",
+  appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const lista = document.getElementById("lista");
+
+function cargarAutorizaciones() {
+  lista.innerHTML = "";
+
+  const hoy = new Date().toISOString().slice(0,10);
+
+  db.ref("autorizaciones/" + hoy).once("value").then(snapshot => {
+
+    if (!snapshot.exists()) {
+      lista.innerHTML = "<li>No hay autorizaciones hoy</li>";
+      return;
+    }
+
+    let todas = [];
+
+    snapshot.forEach(alumnoSnap => {
+      const nombre = alumnoSnap.key;
+      const registros = alumnoSnap.val();
+
+      registros.forEach(reg => {
+        todas.push({
+          alumno: nombre,
+          horaISO: reg.hora
+        });
+      });
+    });
+
+    // 🔁 ORDENAR DE MÁS RECIENTE A MÁS ANTIGUA
+    todas.sort((a, b) => new Date(b.horaISO) - new Date(a.horaISO));
+
+    // 🔹 MOSTRAR
+    todas.forEach(item => {
+      const horaBonita = new Date(item.horaISO)
+        .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="hora">${horaBonita}</span>
+                      <span class="alumno">– ${item.alumno}</span>`;
+      lista.appendChild(li);
+    });
+  });
+}
+
+// Carga inicial y refresco cada 10s
+cargarAutorizaciones();
+setInterval(cargarAutorizaciones, 10000);
+</script>
+</body>
+</html>
