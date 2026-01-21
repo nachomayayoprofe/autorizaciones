@@ -4,105 +4,139 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Autorizaciones recientes</title>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
 body {
   font-family: Verdana, Geneva, sans-serif;
-  background-color: #f7f7f7;
+  background: #f2f2f2;
   display: flex;
   justify-content: center;
-  padding: 50px 10px;
+  padding: 30px;
 }
 
 .container {
-  background-color: #fff;
-  padding: 30px;
+  background: white;
+  padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   width: 100%;
-  max-width: 350px;
+  max-width: 480px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.15);
 }
 
 h1 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 ul {
   list-style: none;
-  padding-left: 0;
+  padding: 0;
 }
 
-ul li {
-  padding: 6px 0;
+li {
+  padding: 8px 0;
   border-bottom: 1px solid #eee;
+}
+
+.hora {
+  font-weight: bold;
+  color: #2e7d32;
+}
+
+.acciones {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.boton {
+  display: inline-block;
+  padding: 10px 16px;
+  background-color: #1976d2;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.boton:hover {
+  background-color: #1565c0;
 }
 </style>
 </head>
-<body>
 
+<body>
 <div class="container">
-  <h1>Alumnos autorizados (últimos 5 min)</h1>
+  <h1>Alumnos autorizados (últimos 5 minutos)</h1>
   <ul id="lista"></ul>
+
+  <div class="acciones">
+    <a href="https://nachomayayoprofe.github.io/autorizaciones/registro.html" class="boton">
+      Registro completo
+    </a>
+  </div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const firebaseConfig = {
-    apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
-    authDomain: "autorizaciones-cc9cd.firebaseapp.com",
-    projectId: "autorizaciones-cc9cd",
-    databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
-    storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
-    messagingSenderId: "126656366989",
-    appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+// 🔹 CONFIGURACIÓN FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyCAU3XI25r45i4d4zyWWxLNvKrTkg0Gs3s",
+  authDomain: "autorizaciones-cc9cd.firebaseapp.com",
+  databaseURL: "https://autorizaciones-cc9cd-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "autorizaciones-cc9cd",
+  storageBucket: "autorizaciones-cc9cd.firebasestorage.app",
+  messagingSenderId: "126656366989",
+  appId: "1:126656366989:web:57b69507cf2eb84e1995c4"
+};
 
-  function actualizarLista() {
-    const lista = document.getElementById("lista");
-    lista.innerHTML = '';
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    const ahora = new Date();
-    const hace5Min = new Date(ahora.getTime() - 5*60000);
-    const hoy = ahora.toISOString().slice(0,10);
+function actualizarLista() {
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
 
-    db.ref("autorizaciones/" + hoy).once("value").then(snapshot => {
-      if(!snapshot.exists()){
-        lista.innerHTML = '<li>No hay autorizaciones recientes</li>';
-        return;
-      }
+  const ahora = new Date();
+  const hace5Min = new Date(ahora.getTime() - 5 * 60000);
 
-      let count = 0;
-      snapshot.forEach(alumnoSnap => {
-        const nombre = alumnoSnap.key;
-        const registros = alumnoSnap.val();
+  const hoy = ahora.getFullYear() + "-" +
+              String(ahora.getMonth()+1).padStart(2,"0") + "-" +
+              String(ahora.getDate()).padStart(2,"0");
 
-        Object.values(registros).forEach(reg => {
-          if(!reg.hora) return;
-          const fechaHora = new Date(reg.hora);
-          if(fechaHora >= hace5Min && fechaHora <= ahora){
-            const li = document.createElement("li");
-            li.textContent = `${nombre} → ${fechaHora.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
-            lista.appendChild(li);
-            count++;
-          }
-        });
+  db.ref("autorizaciones/" + hoy).once("value").then(snapshot => {
+
+    if (!snapshot.exists()) {
+      lista.innerHTML = "<li>No hay autorizaciones recientes</li>";
+      return;
+    }
+
+    snapshot.forEach(alumnoSnap => {
+      const nombre = alumnoSnap.key;
+      const registros = alumnoSnap.val();
+
+      Object.values(registros).forEach(reg => {
+        if (!reg.hora) return;
+
+        const fechaHora = new Date(hoy + "T" + reg.hora + ":00");
+
+        if (fechaHora >= hace5Min && fechaHora <= ahora) {
+          const li = document.createElement("li");
+          li.innerHTML = `<span class="hora">${reg.hora}</span> – ${nombre}`;
+          lista.appendChild(li);
+        }
       });
-
-      if(count === 0){
-        lista.innerHTML = '<li>No hay autorizaciones recientes</li>';
-      }
     });
-  }
 
-  actualizarLista();
-  setInterval(actualizarLista, 10000);
-});
+  });
+}
+
+// 🔁 Actualiza cada 10 segundos
+actualizarLista();
+setInterval(actualizarLista, 10000);
 </script>
-
 </body>
 </html>
